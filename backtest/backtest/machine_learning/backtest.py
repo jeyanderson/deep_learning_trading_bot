@@ -9,7 +9,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM, Dropout
 from sys import argv
 
-from utilities.backtesting import basic_single_asset_backtest, plot_wallet_vs_asset, get_metrics, get_n_columns, plot_sharpe_evolution, plot_bar_by_month
+from utilities.backtesting import basic_single_asset_backtest,get_metrics
 from utilities.get_data import get_historical_from_db
 
 class lstm_strat():
@@ -23,7 +23,7 @@ class lstm_strat():
         self.use_short = use_short
         self.strat = strat
         
-    def populate_indicators(self, show_log=False):
+    def populateIndicators(self, show_log=False):
         # -- Clear dataset --
         df = self.df
         df.drop(columns=df.columns.difference(['open','high','low','close','volume', "predicted"]), inplace=True)
@@ -41,7 +41,7 @@ class lstm_strat():
         self.df = df    
         return self.df
     
-    def populate_buy_sell(self, show_log=False): 
+    def populateBuySell(self, show_log=False): 
         df = self.df
         # -- Initiate populate --
         df["open_long_market"] = False
@@ -115,7 +115,6 @@ class lstm_strat():
     def run_backtest(self, initial_wallet=1000, return_type="metrics"):
         dt = self.df[:]
         wallet = initial_wallet
-        maker_fee = 0
         taker_fee = 0.0007
         trades = []
         days = []
@@ -233,19 +232,19 @@ class lstm_strat():
                     }
                     
                     
-        df_days = pd.DataFrame(days)
-        df_days['day'] = pd.to_datetime(df_days['day'])
-        df_days = df_days.set_index(df_days['day'])
+        dfDays = pd.DataFrame(days)
+        dfDays['day'] = pd.to_datetime(dfDays['day'])
+        dfDays = dfDays.set_index(dfDays['day'])
 
-        df_trades = pd.DataFrame(trades)
-        df_trades['open_date'] = pd.to_datetime(df_trades['open_date'])
-        df_trades = df_trades.set_index(df_trades['open_date'])   
+        dfTrades = pd.DataFrame(trades)
+        dfTrades['open_date'] = pd.to_datetime(dfTrades['open_date'])
+        dfTrades = dfTrades.set_index(dfTrades['open_date'])   
         
         if return_type == "metrics":
-            return get_metrics(df_trades, df_days) | {
+            return get_metrics(dfTrades, dfDays) | {
                 "wallet": wallet,
-                "trades": df_trades,
-                "days": df_days
+                "trades": dfTrades,
+                "days": dfDays
             }  
         else:
             return True
@@ -363,9 +362,9 @@ strat = lstm_strat(
     strat=0,
 )
 
-strat.populate_indicators()
-strat.populate_buy_sell(show_log=True)
-bt_result = strat.run_backtest(initial_wallet=1000, return_type="metrics")
-df_trades, df_days = basic_single_asset_backtest(trades=bt_result['trades'], days = bt_result['days'])
-if bt_result['wallet']>2900:
+strat.populateIndicators()
+strat.populateBuySell(show_log=True)
+btResult = strat.run_backtest(initial_wallet=1000, return_type="metrics")
+dfTrades, dfDays = basic_single_asset_backtest(trades=btResult['trades'], days = btResult['days'])
+if btResult['wallet']>2900:
     regressor.save('/saved2/')
